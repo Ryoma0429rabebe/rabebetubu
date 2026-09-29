@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>ラベベTube</title>
+<style>
+:root{--bg:#0f0f0f;--card:#1a1a1a;--text:#f1f1f1;--muted:#aaa;--accent:#ff4d6d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;min-height:100vh}
+header{position:sticky;top:0;z-index:50;background:rgba(15,15,15,.96);border-bottom:1px solid #222;padding:10px 14px;display:flex;align-items:center;gap:12px}
+.logo{font-size:20px;font-weight:800;color:var(--accent);cursor:pointer;white-space:nowrap;user-select:none}
+.logo span{color:#fff}
+.search-wrap{flex:1;display:flex;max-width:560px;background:#121212;border:1px solid #333;border-radius:24px;overflow:hidden}
+.search-wrap input{flex:1;background:transparent;border:none;color:#fff;padding:11px 16px;font-size:15px;outline:none}
+.search-wrap button{background:#222;border:none;color:#ccc;padding:0 16px;cursor:pointer;font-size:15px}
+main{max-width:1100px;margin:0 auto;padding:18px 14px 70px}
+.hint{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:14px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{padding:8px 14px;border-radius:20px;border:1px solid #333;background:#161616;color:#ccc;font-size:13px;cursor:pointer}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+.box{background:var(--card);border-radius:12px;padding:14px;margin-bottom:16px}
+.box label{display:block;font-size:13px;font-weight:600;margin-bottom:8px}
+.box input{width:100%;background:#121212;border:1px solid #333;border-radius:10px;color:#fff;padding:11px 12px;font-size:14px;outline:none;margin-bottom:10px}
+.box button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+.section{font-size:16px;font-weight:700;margin:8px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.card{cursor:pointer}
+.thumb{position:relative;aspect-ratio:16/9;background:#222;border-radius:10px;overflow:hidden}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.duration{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.85);color:#fff;font-size:11px;padding:2px 5px;border-radius:4px}
+.meta{padding:8px 2px 0}
+.title{font-size:13px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.author{font-size:12px;color:var(--muted);margin-top:4px}
+.status{font-size:13px;color:var(--muted);padding:20px 8px;text-align:center}
+.error{color:#ff8a8a}
+.back{display:inline-block;margin-bottom:12px;color:var(--muted);font-size:14px;cursor:pointer}
+.player-layout{display:grid;grid-template-columns:1fr 300px;gap:18px}
+@media(max-width:900px){.player-layout{grid-template-columns:1fr}}
+.video-box{width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;position:relative}
+.video-box iframe{width:100%;height:100%;border:0;display:block}
+.ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#666;font-size:14px}
+.info h1{font-size:17px;font-weight:700;line-height:1.35;margin:12px 0 6px;word-break:break-word}
+.info .sub{font-size:13px;color:var(--muted);margin-bottom:8px}
+.related-title{font-size:14px;font-weight:700;margin-bottom:10px}
+.rel{display:flex;gap:10px;margin-bottom:12px;cursor:pointer}
+.rel-thumb{width:140px;min-width:140px;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#222}
+.rel-thumb img{width:100%;height:100%;object-fit:cover}
+.rel-title{font-size:13px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rel-author{font-size:12px;color:var(--muted);margin-top:3px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo" id="logoBtn">ラベベ<span>Tube</span></div>
+  <div class="search-wrap">
+    <input type="search" id="q" placeholder="ここに検索してください" enterkeyhint="search" autocomplete="off">
+    <button type="button" id="searchBtn">🔍</button>
+  </div>
+</header>
+
+<main>
+  <div id="homeView">
+    <p class="hint">キーワード検索、またはYouTubeのURLを貼って再生できます。</p>
+    <div class="tabs">
+      <button type="button" class="tab on" id="tabSearch">検索</button>
+      <button type="button" class="tab" id="tabUrl">URL再生</button>
+    </div>
+
+    <div id="urlPanel" class="box hide">
+      <label>YouTubeのURLを貼る</label>
+      <input type="text" id="urlInput" placeholder="https://www.youtube.com/watch?v=xxxxx" autocomplete="off">
+      <button type="button" id="urlPlayBtn">再生する</button>
+    </div>
+
+    <div id="searchPanel">
+      <div class="section" id="sectionTitle">検索結果</div>
+      <div class="status" id="status">上の欄にキーワードを入れて検索してください</div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+  <div id="playerView" class="hide">
+    <div class="back" id="backBtn">← 戻る</div>
+    <div class="player-layout">
+      <div>
+        <div class="video-box">
+          <div class="ph" id="ph">読み込み中...</div>
+          <iframe id="frame" class="hide" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="YouTube"></iframe>
+        </div>
+        <div class="info">
+          <h1 id="vTitle">動画</h1>
+          <div class="sub" id="vMeta"></div>
+        </div>
+      </div>
+      <div>
+        <div class="related-title">関連・他の結果</div>
+        <div id="related"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+"use strict";
+
+var APIS = [
+  "https://invidious.f5.si",
+  "https://yt.artemislena.eu",
+  "https://invidious.nerdvpn.de",
+  "https://inv.nadeko.net",
+  "https://invidious.tiekoetter.com"
+];
+var lastList = [];
+
+function $(id){ return document.getElementById(id); }
+
+function extractId(input){
+  if(!input) return null;
+  input = String(input).trim();
+  if(/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+  try{
+    var u = new URL(input.indexOf("http")===0 ? input : "https://"+input);
+    var h = u.hostname.replace(/^www\./,"");
+    if(h==="youtu.be"){
+      var p = u.pathname.replace(/^\//,"").split("/")[0];
+      return p && p.length>=11 ? p.slice(0,11) : null;
+    }
+    if(h.indexOf("youtube.com")!==-1 || h.indexOf("youtube-nocookie.com")!==-1){
+      var v = u.searchParams.get("v");
+      if(v && v.length>=11) return v.slice(0,11);
+      var parts = u.pathname.split("/").filter(Boolean);
+      for(var i=0;i<parts.length-1;i++){
+        if(["embed","shorts","live","v","e"].indexOf(parts[i])!==-1){
+          var id = parts[i+1].slice(0,11);
+          if(id.length===11) return id;
+        }
+      }
+    }
+  }catch(e){}
+  var m = input.match(/(?:v=|\/embed\/|\/shorts\/|\/live\/|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
+function thumb(id){ return "https://i.ytimg.com/vi/"+id+"/hqdefault.jpg"; }
+
+function fmtDur(sec){
+  sec = parseInt(sec,10)||0;
+  var h=Math.floor(sec/3600), m=Math.floor((sec%3600)/60), s=sec%60;
+  if(h>0) return h+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+  return m+":"+String(s).padStart(2,"0");
+}
+
+function showHome(){
+  $("playerView").classList.add("hide");
+  $("homeView").classList.remove("hide");
+  var f=$("frame");
+  f.removeAttribute("src");
+  f.classList.add("hide");
+  $("ph").classList.remove("hide");
+}
+
+function playId(id, title, author){
+  if(!id) return;
+  $("homeView").classList.add("hide");
+  $("playerView").classList.remove("hide");
+  $("vTitle").textContent = title || "YouTube動画";
+  $("vMeta").textContent = (author ? author+" ・ " : "") + "https://www.youtube.com/watch?v="+id;
+  $("ph").classList.add("hide");
+  var f=$("frame");
+  f.classList.remove("hide");
+  f.src = "https://www.youtube-nocookie.com/embed/"+encodeURIComponent(id)+"?autoplay=1&rel=0";
+  drawRelated(id);
+  window.scrollTo(0,0);
+}
+
+function drawRelated(exclude){
+  var box=$("related");
+  var html="";
+  var n=0;
+  for(var i=0;i<lastList.length && n<10;i++){
+    var v=lastList[i];
+    var id=v.videoId||v.videoID||v.id;
+    if(!id || id===exclude) continue;
+    n++;
+    html += '<div class="rel" data-id="'+id+'" data-title="'+(v.title||"").replace(/"/g,"&quot;")+'" data-author="'+(v.author||"").replace(/"/g,"&quot;")+'">';
+    html += '<div class="rel-thumb"><img src="'+thumb(id)+'" alt="" loading="lazy"></div>';
+    html += '<div><div class="rel-title">'+(v.title||"")+'</div><div class="rel-author">'+(v.author||"")+'</div></div></div>';
+  }
+  box.innerHTML = html || '<div class="status">関連なし</div>';
+  var items=box.querySelectorAll(".rel");
+  for(var j=0;j<items.length;j++){
+    items[j].onclick=function(){
+      playId(this.getAttribute("data-id"), this.getAttribute("data-title"), this.getAttribute("data-author"));
+    };
+  }
+}
+
+function drawGrid(list){
+  var grid=$("grid");
+  if(!list || !list.length){
+    grid.innerHTML="";
+    return;
+  }
+  var html="";
+  for(var i=0;i<list.length;i++){
+    var v=list[i];
+    var id=v.videoId||v.videoID||v.id;
+    if(!id) continue;
+    if(v.type && v.type!=="video") continue;
+    var title=v.title||"無題";
+    var author=v.author||v.authorName||"";
+    var dur=v.lengthSeconds?fmtDur(v.lengthSeconds):(v.duration||"");
+    html += '<div class="card" data-id="'+id+'" data-title="'+title.replace(/"/g,"&quot;")+'" data-author="'+author.replace(/"/g,"&quot;")+'">';
+    html += '<div class="thumb"><img src="'+thumb(id)+'" alt="" loading="lazy">';
+    if(dur) html += '<span class="duration">'+dur+'</span>';
+    html += '</div><div class="meta"><div class="title">'+title+'</div><div class="author">'+author+'</div></div></div>';
+  }
+  grid.innerHTML=html;
+  var cards=grid.querySelectorAll(".card");
+  for(var j=0;j<cards.length;j++){
+    cards[j].onclick=function(){
+      playId(this.getAttribute("data-id"), this.getAttribute("data-title"), this.getAttribute("data-author"));
+    };
+  }
+}
+
+function trySearch(q, idx){
+  idx = idx||0;
+  var status=$("status");
+  if(idx >= APIS.length){
+    status.className="status error";
+    status.innerHTML="検索サーバーに接続できませんでした。<br>「URL再生」タブでYouTubeのURLを貼ってください。";
+    return;
+  }
+  status.className="status";
+  status.textContent="検索中... ("+(idx+1)+"/"+APIS.length+")";
+  var api=APIS[idx];
+  var ctrl=new AbortController();
+  var t=setTimeout(function(){ctrl.abort();},9000);
+  fetch(api+"/api/v1/search?q="+encodeURIComponent(q)+"&type=video",{signal:ctrl.signal})
+    .then(function(r){ if(!r.ok) throw new Error("http"); return r.json(); })
+    .then(function(data){
+      clearTimeout(t);
+      var list=Array.isArray(data)?data:(data.items||data.results||[]);
+      list=list.filter(function(v){ return (!v.type||v.type==="video") && (v.videoId||v.videoID||v.id); });
+      lastList=list;
+      $("sectionTitle").textContent="「"+q+"」の検索結果（"+list.length+"件）";
+      if(!list.length){
+        status.className="status";
+        status.textContent="見つかりませんでした。別の言葉か、URL再生を試してください。";
+      } else {
+        status.textContent="";
+      }
+      drawGrid(list);
+    })
+    .catch(function(){
+      clearTimeout(t);
+      trySearch(q, idx+1);
+    });
+}
+
+function doSearch(){
+  var q=($("q").value||"").trim();
+  if(!q){ alert("検索ワードを入力してください"); return; }
+  var id=extractId(q);
+  if(id && (q.indexOf("http")===0 || q.indexOf("youtu")!==-1 || q.length===11)){
+    playId(id, null, null);
+    return;
+  }
+  showHome();
+  $("tabSearch").classList.add("on");
+  $("tabUrl").classList.remove("on");
+  $("searchPanel").classList.remove("hide");
+  $("urlPanel").classList.add("hide");
+  $("grid").innerHTML="";
+  trySearch(q, 0);
+}
+
+function playUrl(){
+  var raw=($("urlInput").value||"").trim();
+  var id=extractId(raw);
+  if(!id){ alert("有効なYouTubeのURLを貼ってください"); return; }
+  playId(id, null, null);
+}
+
+$("searchBtn").onclick=doSearch;
+$("q").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); doSearch(); } };
+$("urlPlayBtn").onclick=playUrl;
+$("urlInput").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); playUrl(); } };
+$("logoBtn").onclick=function(){ showHome(); $("q").value=""; $("grid").innerHTML=""; $("status").textContent="上の欄にキーワードを入れて検索してください"; $("sectionTitle").textContent="検索結果"; };
+$("backBtn").onclick=showHome;
+
+$("tabSearch").onclick=function(){
+  $("tabSearch").classList.add("on"); $("tabUrl").classList.remove("on");
+  $("searchPanel").classList.remove("hide"); $("urlPanel").classList.add("hide");
+};
+$("tabUrl").onclick=function(){
+  $("tabUrl").classList.add("on"); $("tabSearch").classList.remove("on");
+  $("urlPanel").classList.remove("hide"); $("searchPanel").classList.add("hide");
+};
+})();
+</script>
+</body>
+</html>
